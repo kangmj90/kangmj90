@@ -1,80 +1,97 @@
-# kangmj90
-# A collection of `.gitignore` templates
+posh-git
+========
 
-This is GitHub�셲 collection of [`.gitignore`][man] file templates.
-We use this list to populate the `.gitignore` template choosers available
-in the GitHub.com interface when creating new repositories and files.
+A set of PowerShell scripts which provide Git/PowerShell integration
 
-For more information about how `.gitignore` files work, and how to use them,
-the following resources are a great place to start:
+### Prompt for Git repositories
+   The prompt within Git repositories can show the current branch and the state of files (additions, modifications, deletions) within.
 
-- The [Ignoring Files chapter][chapter] of the [Pro Git][progit] book.
-- The [Ignoring Files article][help] on the GitHub Help site.
-- The [gitignore(5)][man] manual page.
+### Tab completion
+   Provides tab completion for common commands when using git.
+   E.g. `git ch<tab>` --> `git checkout`
 
-[man]: http://git-scm.com/docs/gitignore
-[help]: https://help.github.com/articles/ignoring-files
-[chapter]: http://git-scm.com/book/en/Git-Basics-Recording-Changes-to-the-Repository#Ignoring-Files
-[progit]: http://git-scm.com/book
+Usage
+-----
 
-## Folder structure
+See `profile.example.ps1` as to how you can integrate the tab completion and/or git prompt into your own profile.
+Prompt formatting, among other things, can be customized using `$GitPromptSettings`, `$GitTabSettings` and `$TortoiseGitSettings`.
 
-The files in the root directory are for `.gitignore` templates that are
-project specific, such as language or framework specific templates.
-Global (operating system or editor specific) templates should go into the
-[`Global/`](./Global) directory.
+Note on performance: displaying file status in the git prompt for a very large repo can be prohibitively slow. Rather than turn off file status entirely, you can disable it on a repo-by-repo basis by adding individual repository paths to $GitPromptSettings.RepositoriesInWhichToDisableFileStatus.
 
-## Contributing guidelines
+Installing via PsGet
+--------------------
 
-We�셝 love you to help us improve this project. To help us keep this collection
-high quality, we request that contributions adhere to the following guidelines.
+If you have [PsGet](http://psget.net/) installed just run:
 
-- **Provide a link to the application or project�셲 homepage**. Unless it�셲
-  extremely popular, there�셲 a chance the maintainers don�셳 know about or use
-  the language, framework, editor, app, or project your change applies to.
+```
+Install-Module posh-git
+```
 
-- **Provide links to documentation** supporting the change you�셱e making.
-  Current, canonical documentation mentioning the files being ignored is best.
-  If documentation isn�셳 available to support your change, do the best you can
-  to explain what the files being ignored are for.
+Installing (manual)
+-------------------
 
-- **Explain why you�셱e making a change**. Even if it seems self-evident, please
-  take a sentence or two to tell us why your change or addition should happen.
-  It�셲 especially helpful to articulate why this change applies to *everyone*
-  who works with the applicable technology, rather than just you or your team.
+0. Verify you have PowerShell 2.0 or better with `$PSVersionTable.PSVersion`. PowerShell 3.0 is preferred as 2.0 support is deprecated.
 
-- **Please consider the scope of your change**. If your change specific to a
-  certain language or framework, then make sure the change is made to the
-  template for that language or framework, rather than to the template for an
-  editor, tool, or operating system.
+1. Verify execution of scripts is allowed with `Get-ExecutionPolicy` (should be `RemoteSigned` or `Unrestricted`). If scripts are not enabled, run PowerShell as Administrator and call `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Confirm`.
 
-- **Please only modify *one template* per pull request**. This helps keep pull
-  requests and feedback focused on a specific project or technology.
+2. Verify that `git` can be run from PowerShell.
+   If the command is not found, you will need to add a git alias or add `%ProgramFiles(x86)%\Git\cmd`
+   (or `%ProgramFiles%\Git\cmd` if you're still on 32-bit) to your `PATH` environment variable.
 
-In general, the more you can do to help us understand the change you�셱e making,
-the more likely we�셪l be to accept your contribution quickly.
+3. Clone the posh-git repository to your local machine.
 
-Please also understand that we can�셳 list every tool that ever existed.
-Our aim is to curate a collection of the *most common and helpful* templates,
-not to make sure we cover every project possible. If we choose not to
-include your language, tool, or project, it�셲 not because it�셲 not awesome.
+4. From the posh-git repository directory, run `.\install.ps1`.
 
-## Contributing workflow
+5. Enjoy!
 
-Here�셲 how we suggest you go about proposing a change to this project:
+The Prompt
+----------
 
-1. [Fork this project][fork] to your account.
-2. [Create a branch][branch] for the change you intend to make.
-3. Make your changes to your fork.
-4. [Send a pull request][pr] from your fork�셲 branch to our `master` branch.
+PowerShell generates its prompt by executing a `prompt` function, if one exists. posh-git defines such a function in `profile.example.ps1` that outputs the current working directory followed by an abbreviated `git status`:
 
-Using the web-based interface to make changes is fine too, and will help you
-by automatically forking the project and prompting to send a pull request too.
+    C:\Users\Keith [master]>
 
-[fork]: https://help.github.com/articles/fork-a-repo/
-[branch]: https://help.github.com/articles/creating-and-deleting-branches-within-your-repository
-[pr]: https://help.github.com/articles/using-pull-requests/
+By default, the status summary has the following format:
 
-## License
+    [{HEAD-name} +A ~B -C !D | +E ~F -G !H !]
 
-[MIT](./LICENSE).
+* `{HEAD-name}` is the current branch, or the SHA of a detached HEAD
+ * Cyan means the branch matches its remote
+ * Green means the branch is ahead of its remote (green light to push)
+ * Red means the branch is behind its remote
+ * Yellow means the branch is both ahead of and behind its remote
+* ABCD represent the index; EFGH represent the working directory
+ * `+` = Added files
+ * `~` = Modified files
+ * `-` = Removed files
+ * `!` = Conflicted files
+ * As in `git status`, index status is dark green and working directory status is dark red
+ * The trailing `!` means there are untracked files
+
+For example, a status of `[master +0 ~2 -1 | +1 ~1 -0]` corresponds to the following `git status`:
+
+    # On branch master
+    #
+    # Changes to be committed:
+    #   (use "git reset HEAD <file>..." to unstage)
+    #
+    #        modified:   this-changed.txt
+    #        modified:   this-too.txt
+    #        deleted:    gone.ps1
+    #
+    # Changed but not updated:
+    #   (use "git add <file>..." to update what will be committed)
+    #   (use "git checkout -- <file>..." to discard changes in working directory)
+    #
+    #        modified:   not-staged.ps1
+    #
+    # Untracked files:
+    #   (use "git add <file>..." to include in what will be committed)
+    #
+    #        new.file
+
+### Based on work by:
+
+ - Keith Dahlby, http://solutionizing.net/
+ - Mark Embling, http://www.markembling.info/
+ - Jeremy Skinner, http://www.jeremyskinner.co.uk/
